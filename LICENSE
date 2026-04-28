@@ -1,0 +1,6 @@
+Apache License 2.0
+
+This extension is distributed under the Apache License 2.0.
+
+The vendored Google Brotli C sources under native/vendor/brotli are distributed
+under their original MIT license; see native/vendor/brotli/LICENSE.

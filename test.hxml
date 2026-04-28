@@ -1,0 +1,7 @@
+-cp src
+-cp ../crossbyte/src
+-cp ../crossbyte/tests
+-cp tests
+-lib utest
+-main TestMain
+--interp

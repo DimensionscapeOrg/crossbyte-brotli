@@ -1,0 +1,8 @@
+-cp src
+-cp ../crossbyte/src
+-cp ../crossbyte/tests
+-cp tests
+-lib utest
+-D crossbyte_brotli_native
+-main crossbyte.brotli.NativeBrotliTestMain
+--cpp ../crossbyte/export/crossbyte-brotli-native-test

@@ -1,0 +1,13 @@
+{
+	"name": "crossbyte-brotli",
+	"url": "https://github.com/DimensionscapeOrg/crossbyte-brotli",
+	"license": "Apache",
+	"tags": ["crossbyte", "brotli", "compression", "cpp"],
+	"description": "Optional native Brotli backend and oracle for CrossByte",
+	"version": "0.0.1",
+	"releasenote": "Initial native Brotli extension scaffold",
+	"contributors": [
+		"Dimensionscape"
+	],
+	"classPath": "src"
+}
