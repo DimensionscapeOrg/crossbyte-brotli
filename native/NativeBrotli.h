@@ -6,6 +6,8 @@
 bool crossbyte_brotli_available();
 ::String crossbyte_brotli_version();
 Array<unsigned char> crossbyte_brotli_compress(Array<unsigned char> input, int inputLength, int quality);
-Array<unsigned char> crossbyte_brotli_decompress(Array<unsigned char> input, int inputLength);
+// Null when the stream decodes past maxOutputSize (0: no limit); throws a
+// String when it is not valid Brotli.
+Array<unsigned char> crossbyte_brotli_decompress(Array<unsigned char> input, int inputLength, int maxOutputSize);
 
 #endif
