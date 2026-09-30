@@ -83,14 +83,33 @@ class NativeBrotliTest extends utest.Test {
 	}
 
 	public function testNativeStopsAtTheLimit():Void {
-		// 256 MB of zeros in 211 bytes, with a 16 MB window. The decoder has
-		// room for 1 MB and is stopped when it asks for more, having decoded
-		// one window at most. It used to decode the lot into a vector,
-		// copy that into an Array, and only then let the caller measure it:
-		// the process peaked 500 MB higher to refuse it. (It is refused in
+		// 256 MB of zeros in 211 bytes, in 16 MB meta-blocks. The decoder has
+		// room for 1 MB and is stopped when it asks for more, and its ring
+		// buffer is held to what 1 MB could need, so the first meta-block is
+		// refused at its header. It used to decode the lot into a vector, copy
+		// that into an Array, and only then let the caller measure it: the
+		// process peaked 500 MB higher to refuse it. (It is refused in
 		// setupClass; see there.)
 		Assert.isOfType(__bombRefusal, RangeError, "a 256 MB stream at 1 MB: " + Std.string(__bombRefusal));
 		Assert.isTrue(__bombGrowth >= 0 && __bombGrowth < 64, 'refusing a 256 MB stream at 1 MB raised the peak by $__bombGrowth MB');
+	}
+
+	public function testNativeHoldsItsOwnMemoryToTheLimit():Void {
+		// CF FF FF FF: a 16 MB window, then a 16 MB uncompressed meta-block,
+		// then nothing. The library sizes its ring buffer from that header
+		// before it reads a byte of data, so four bytes cost 16 MB whatever
+		// the limit, and said only that the stream ended early. Its
+		// allocations are now counted against what the limit could need.
+		var refusal:Dynamic = null;
+		try {
+			NativeBrotli.decompress(Bytes.ofHex("cfffffff"), 1 << 20);
+		} catch (e:Dynamic) {
+			refusal = e;
+		}
+		Assert.isOfType(refusal, RangeError, "four bytes announcing 16 MB, at a 1 MB limit: " + Std.string(refusal));
+
+		// Within the limit it is only a stream cut short.
+		Assert.raises(() -> NativeBrotli.decompress(Bytes.ofHex("cfffffff"), 32 << 20), IOError);
 	}
 
 	public function testNativeLimitComesBeforeWhereTheStreamEnds():Void {
