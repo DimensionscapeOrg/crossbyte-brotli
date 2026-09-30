@@ -33,7 +33,8 @@ class NativeBrotli {
 	}
 
 	/**
-		Compresses `bytes` as one Brotli stream.
+		Compresses `bytes` as one Brotli stream, with the smallest window that
+		holds all of it: that is what the decoder at the other end allocates.
 
 		@throws ArgumentError `quality` is not between 0 and 11.
 	**/
