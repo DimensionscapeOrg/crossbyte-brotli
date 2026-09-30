@@ -50,7 +50,7 @@ extern class NativeBrotliBridge {
 	@:native("crossbyte_brotli_available") public static function isAvailable():Bool;
 	@:native("crossbyte_brotli_version") public static function version():String;
 	@:native("crossbyte_brotli_compress") public static function compress(input:haxe.io.BytesData, inputLength:Int, quality:Int):haxe.io.BytesData;
-	@:native("crossbyte_brotli_decompress") public static function decompress(input:haxe.io.BytesData, inputLength:Int):haxe.io.BytesData;
+	@:native("crossbyte_brotli_decompress") public static function decompress(input:haxe.io.BytesData, inputLength:Int, maxOutputSize:Int):haxe.io.BytesData;
 }
 #else
 extern class NativeBrotliBridge {}
