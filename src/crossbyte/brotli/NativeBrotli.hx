@@ -58,9 +58,10 @@ class NativeBrotli {
 		       limit. Brotli ratios have no ceiling, so anything decoding a
 		       stream it did not author wants to name one. The decoder is
 		       given room for that many bytes and is stopped when it asks for
-		       more. By then it may have decoded up to one window ahead into
-		       its own ring buffer, the window the stream declares, 16 MB
-		       at most, but never the rest of the stream.
+		       more, and its own allocations are held to what output within
+		       the limit could need: three times it, and 4 MB for tables. A
+		       meta-block announcing far more than the limit is refused at its
+		       header, before the buffer for it is allocated.
 
 		@throws IOError The data is not a valid Brotli stream.
 		@throws RangeError It decodes past `maxOutputSize`.

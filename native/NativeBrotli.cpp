@@ -63,14 +63,58 @@ int windowBitsFor(size_t length) {
 	return bits;
 }
 
+// The decoder's own allocations, held to what output within a limit could
+// need. Its ring buffer is the largest: a stream's header sizes it, 16 MB for
+// four bytes of input if it likes, before a byte of data is read. Sized to the
+// output it has to hold, it is under twice that output, and growing it briefly
+// holds the old one as well, so three times the limit covers it; 4 MB more
+// covers the Huffman tables and context maps a meta-block can declare, about
+// 2.7 MB at most. An allocation past that fails, the decoder reports it, and
+// since nothing within the limit needs the memory, that is the limit.
+struct Budget {
+	size_t left;
+	bool refused;
+};
+
+// Ahead of each block, for its size; 16 bytes keep malloc's alignment.
+const size_t kBlockHeader = 16;
+
+void* budgetAlloc(void* opaque, size_t size) {
+	Budget* budget = (Budget*)opaque;
+	if (size > budget->left || size > SIZE_MAX - kBlockHeader) {
+		budget->refused = true;
+		return 0;
+	}
+	uint8_t* block = (uint8_t*)malloc(size + kBlockHeader);
+	if (block == 0) {
+		return 0;
+	}
+	*(size_t*)block = size;
+	budget->left -= size;
+	return block + kBlockHeader;
+}
+
+void budgetFree(void* opaque, void* address) {
+	if (address == 0) {
+		return;
+	}
+	Budget* budget = (Budget*)opaque;
+	uint8_t* block = (uint8_t*)address - kBlockHeader;
+	budget->left += *(size_t*)block;
+	free(block);
+}
+
 // Decodes source[0, length) into a buffer of its own, giving the decoder room
 // for `limit` bytes and no more. When it asks for more than that it is
-// stopped: it may have decoded up to a window ahead into its ring buffer (16
-// MB at most), but never the rest of the stream. Runs in a GC-free zone.
+// stopped: it may have decoded ahead into its ring buffer, which is held to
+// the limit too, but never the rest of the stream. Runs in a GC-free zone.
 Status decode(const uint8_t* source, size_t length, size_t limit, uint8_t** out, size_t* produced, BrotliDecoderErrorCode* error) {
-	BrotliDecoderState* state = BrotliDecoderCreateInstance(0, 0, 0);
+	Budget budget;
+	budget.left = limit < (SIZE_MAX - ((size_t)4 << 20)) / 3 ? limit * 3 + ((size_t)4 << 20) : SIZE_MAX;
+	budget.refused = false;
+	BrotliDecoderState* state = BrotliDecoderCreateInstance(budgetAlloc, budgetFree, &budget);
 	if (state == 0) {
-		return STATUS_NO_MEMORY;
+		return budget.refused ? STATUS_LIMIT : STATUS_NO_MEMORY;
 	}
 
 	// A stream says nothing of its size, so the buffer starts at a guess and
@@ -122,7 +166,7 @@ Status decode(const uint8_t* source, size_t length, size_t limit, uint8_t** out,
 		// ends before it says it does.
 		*error = BrotliDecoderGetErrorCode(state);
 		bool allocation = *error <= BROTLI_DECODER_ERROR_ALLOC_CONTEXT_MODES && *error >= BROTLI_DECODER_ERROR_ALLOC_BLOCK_TYPE_TREES;
-		status = allocation ? STATUS_NO_MEMORY : STATUS_INVALID;
+		status = !allocation ? STATUS_INVALID : budget.refused ? STATUS_LIMIT : STATUS_NO_MEMORY;
 		break;
 	}
 	BrotliDecoderDestroyInstance(state);
