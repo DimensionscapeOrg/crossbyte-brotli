@@ -127,6 +127,18 @@ class NativeBrotliTest extends utest.Test {
 		Assert.equals(0, NativeBrotli.decompress(packed, 0).compare(input));
 	}
 
+	public function testNativeWindowFitsTheInput():Void {
+		// The window is what the decoder at the other end allocates, so a
+		// small body says so: WBITS 16 is the single bit 0. It was the
+		// library's default of 22 whatever the size.
+		var body = NativeBrotli.compress(Bytes.ofString("{\"ok\":true}"), 4);
+		Assert.equals(0, body.get(0) & 1, "an 11-byte body asks for more than a 64 KB window");
+
+		// Past 64 KB the window grows to fit, and still round trips.
+		var input = __text(300000);
+		Assert.equals(0, NativeBrotli.decompress(NativeBrotli.compress(input, 4)).compare(input));
+	}
+
 	public function testCompressLeavesTheCollectorFree():Void {
 		// A collection needs every thread at a safe point, and a thread in a
 		// native call reaches none until it returns. Compressing outside a

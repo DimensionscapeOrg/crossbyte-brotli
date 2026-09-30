@@ -48,6 +48,21 @@ uint8_t* copyInput(Array<unsigned char> input, int length) {
 	return copy;
 }
 
+// The window a stream of `length` bytes is written with: the smallest that
+// holds all of it, since that is what the decoder at the other end allocates,
+// and never past the library's default. 16 costs one header bit and 17 seven,
+// so an input between the two goes up to 18, which costs four.
+int windowBitsFor(size_t length) {
+	if (length <= ((size_t)1 << 16) - 16) {
+		return 16;
+	}
+	int bits = 18;
+	while (bits < BROTLI_DEFAULT_WINDOW && ((size_t)1 << bits) - 16 < length) {
+		bits++;
+	}
+	return bits;
+}
+
 // Decodes source[0, length) into a buffer of its own, giving the decoder room
 // for `limit` bytes and no more. When it asks for more than that it is
 // stopped: it may have decoded up to a window ahead into its ring buffer (16
@@ -156,7 +171,7 @@ Array<unsigned char> crossbyte_brotli_compress(Array<unsigned char> input, int i
 	BROTLI_BOOL ok;
 	{
 		hx::AutoGCFreeZone zone;
-		ok = BrotliEncoderCompress(quality, BROTLI_DEFAULT_WINDOW, BROTLI_MODE_GENERIC, (size_t)inputLength, source, &encodedSize, output);
+		ok = BrotliEncoderCompress(quality, windowBitsFor((size_t)inputLength), BROTLI_MODE_GENERIC, (size_t)inputLength, source, &encodedSize, output);
 	}
 	free(source);
 	if (!ok) {
