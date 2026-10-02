@@ -128,10 +128,9 @@ class NativeBrotliTest extends utest.Test {
 	}
 
 	public function testByteArrayHandsTheLimitDown():Void {
-		// CrossByte's ByteArray, on this backend, passes its limit down
-		// rather than decoding the whole stream here and measuring it
-		// afterwards, which heard only that a stream cut short past the
-		// limit was cut short.
+		// CrossByte's ByteArray, on this backend, passes its limit down to the
+		// decoder, so a stream cut short past the limit is reported as over the
+		// limit rather than as merely cut short.
 		var whole = NativeBrotli.compress(__text(2 << 20), 4);
 		var cut:ByteArray = ByteArray.fromBytes(whole.sub(0, whole.length - 1));
 		Assert.raises(() -> cut.uncompress(CompressionAlgorithm.BROTLI, 1 << 20), RangeError);

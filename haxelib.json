@@ -4,10 +4,13 @@
 	"license": "Apache",
 	"tags": ["crossbyte", "brotli", "compression", "cpp"],
 	"description": "Optional native Brotli backend and oracle for CrossByte",
-	"version": "0.0.1",
-	"releasenote": "Initial native Brotli extension scaffold",
+	"version": "1.0.0",
+	"releasenote": "1.0.0: the native Brotli backend for CrossByte 1.0.0's HTTP compression and ByteArray.",
 	"contributors": [
 		"Dimensionscape"
 	],
-	"classPath": "src"
+	"classPath": "src",
+	"dependencies": {
+		"crossbyte": ""
+	}
 }
